@@ -606,9 +606,7 @@ ${match.awayTeam}: ${awayTotal} points (${match.awayTeamGoals || 0} goals, ${mat
             // Add scores if they exist
             const { homeTotal, awayTotal } = this.calculateMatchScore(match);
             if (homeTotal > 0 || awayTotal > 0) {
-                reportContent += `   Final Score:\n`;
-                reportContent += `     ${match.homeTeam}: ${homeTotal} points (${match.homeTeamGoals || 0} goals, ${match.homeTeamPoints || 0} points)\n`;
-                reportContent += `     ${match.awayTeam}: ${awayTotal} points (${match.awayTeamGoals || 0} goals, ${match.awayTeamPoints || 0} points)\n`;
+                reportContent += `   Final Score: ${match.homeTeam} ${homeTotal} points (${match.homeTeamGoals || 0} goals, ${match.homeTeamPoints || 0} points) vs ${match.awayTeam} ${awayTotal} points (${match.awayTeamGoals || 0} goals, ${match.awayTeamPoints || 0} points)\n`;
             }
             
             reportContent += `   Status: ${match.status.charAt(0).toUpperCase() + match.status.slice(1)}\n`;
