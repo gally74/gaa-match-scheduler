@@ -6,172 +6,115 @@
     <title>GAA Match Scheduler</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#2E8B57">
+    <meta name="theme-color" content="#28a745">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="GAA Scheduler">
-    <link rel="apple-touch-icon" href="icon-192x192.png">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏉</text></svg>">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>🏐 GAA Match Scheduler</h1>
-            <p>Manage your scheduled and completed matches</p>
+            <h1>🏉 GAA Match Scheduler</h1>
+            <p>Schedule and manage your GAA matches</p>
         </header>
 
-        <!-- Add Match Form -->
-        <section class="add-match-section">
-            <h2>Add New Match</h2>
-            <form id="addMatchForm">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="matchDate">Date</label>
-                        <input type="date" id="matchDate" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="matchTime">Time</label>
-                        <input type="time" id="matchTime" required>
-                    </div>
-                </div>
+        <nav class="main-nav">
+            <button class="nav-btn active" onclick="showSection('add-match')">Add Match</button>
+            <button class="nav-btn" onclick="showSection('view-matches')">View Matches</button>
+        </nav>
 
-                <div class="form-row">
+        <!-- Add Match Section -->
+        <section id="add-match" class="section active">
+            <div class="add-match-container">
+                <h2>Schedule New Match</h2>
+                <form id="addMatchForm">
                     <div class="form-group">
-                        <label for="gameType">Game Type</label>
+                        <label for="homeTeam">Home Team:</label>
+                        <input type="text" id="homeTeam" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="awayTeam">Away Team:</label>
+                        <input type="text" id="awayTeam" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="gameType">Game Type:</label>
                         <select id="gameType" required>
                             <option value="">Select Game Type</option>
                             <option value="Hurling">Hurling</option>
                             <option value="Gaelic Football">Gaelic Football</option>
                             <option value="Camogie">Camogie</option>
-                            <option value="Ladies Gaelic Football">Ladies Gaelic Football (LGFA)</option>
+                            <option value="LGFA">LGFA</option>
                         </select>
                     </div>
+                    
                     <div class="form-group">
-                        <label for="matchDuration">Half Duration</label>
-                        <select id="matchDuration" required>
-                            <option value="">Select Duration</option>
+                        <label for="matchDate">Match Date:</label>
+                        <input type="date" id="matchDate" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="matchTime">Match Time:</label>
+                        <input type="time" id="matchTime" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="halfDuration">Half Duration (minutes):</label>
+                        <select id="halfDuration" required>
                             <option value="25">25 minutes</option>
                             <option value="30">30 minutes</option>
-                            <option value="35">35 minutes</option>
                         </select>
                     </div>
-                </div>
-
-                <div class="form-row">
+                    
                     <div class="form-group">
-                        <label for="intervalDuration">Interval Duration</label>
+                        <label for="intervalDuration">Interval Duration (minutes):</label>
                         <select id="intervalDuration" required>
-                            <option value="">Select Interval</option>
                             <option value="5">5 minutes</option>
                             <option value="10">10 minutes</option>
                             <option value="15">15 minutes</option>
                         </select>
                     </div>
+                    
                     <div class="form-group">
-                        <label for="matchStatus">Status</label>
-                        <select id="matchStatus" required>
+                        <label for="notes">Notes:</label>
+                        <textarea id="notes" rows="3" placeholder="Any additional notes..."></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Schedule Match</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- View Matches Section -->
+        <section id="view-matches" class="section">
+            <div class="matches-container">
+                <h2>Match Management</h2>
+                <div class="matches-header">
+                    <div class="filter-controls">
+                        <select id="statusFilter">
+                            <option value="all">All Status</option>
                             <option value="scheduled">Scheduled</option>
                             <option value="completed">Completed</option>
                             <option value="cancelled">Cancelled</option>
                         </select>
+                        <select id="gameTypeFilter">
+                            <option value="all">All Games</option>
+                            <option value="Hurling">Hurling</option>
+                            <option value="Gaelic Football">Gaelic Football</option>
+                            <option value="Camogie">Camogie</option>
+                            <option value="LGFA">LGFA</option>
+                        </select>
+                    </div>
+                    <div class="export-controls">
+                        <button id="exportYearBtn" class="btn btn-success">Export Year Report</button>
                     </div>
                 </div>
-
-                <div class="form-group">
-                    <label for="homeTeam">Home Team</label>
-                    <input type="text" id="homeTeam" placeholder="e.g., St. Mary's GAA" required>
+                
+                <div id="matchesList" class="matches-list">
+                    <!-- Matches will be displayed here -->
                 </div>
-
-                <div class="form-group">
-                    <label for="awayTeam">Away Team</label>
-                    <input type="text" id="awayTeam" placeholder="e.g., St. Patrick's GAA" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="venue">Venue</label>
-                    <input type="text" id="venue" placeholder="e.g., Páirc Uí Chaoimh" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="competition">Competition</label>
-                    <input type="text" id="competition" placeholder="e.g., Senior Championship, League, etc.">
-                </div>
-
-                <div class="form-group">
-                    <label for="ageGroup">Age Group</label>
-                    <select id="ageGroup" required>
-                        <option value="">Select Age Group</option>
-                        <option value="U12">U12</option>
-                        <option value="U14">U14</option>
-                        <option value="U16">U16</option>
-                        <option value="U18">U18</option>
-                        <option value="U20">U20</option>
-                        <option value="Senior">Senior</option>
-                        <option value="Junior">Junior</option>
-                        <option value="Intermediate">Intermediate</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="notes">Notes</label>
-                    <textarea id="notes" placeholder="Any additional notes, special instructions, or details from WhatsApp/Sportslomo messages"></textarea>
-                </div>
-
-                <button type="submit" class="btn btn-primary">Add Match</button>
-            </form>
-        </section>
-
-        <!-- Match List -->
-        <section class="matches-section">
-            <div class="section-header">
-                <h2>Your Matches</h2>
-                <div class="filter-controls">
-                    <select id="statusFilter">
-                        <option value="">All Status</option>
-                        <option value="scheduled">Scheduled</option>
-                        <option value="completed">Completed</option>
-                        <option value="cancelled">Cancelled</option>
-                    </select>
-                    <select id="gameTypeFilter">
-                        <option value="">All Game Types</option>
-                        <option value="Hurling">Hurling</option>
-                        <option value="Gaelic Football">Gaelic Football</option>
-                        <option value="Camogie">Camogie</option>
-                        <option value="LGFA">LGFA</option>
-                    </select>
-                    <button id="exportYearBtn" class="btn btn-secondary">Export Year Report</button>
-                    <button id="clearAllBtn" class="btn btn-danger">Clear All</button>
-                </div>
-            </div>
-            
-            <!-- Game Type Filter for Export -->
-            <div class="export-filter-section">
-                <h4>Select Game Types for Export:</h4>
-                <div class="game-type-checkboxes">
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="exportHurling" value="Hurling" checked>
-                        <span>Hurling</span>
-                    </label>
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="exportFootball" value="Gaelic Football" checked>
-                        <span>Gaelic Football</span>
-                    </label>
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="exportCamogie" value="Camogie" checked>
-                        <span>Camogie</span>
-                    </label>
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="exportLGFA" value="LGFA" checked>
-                        <span>LGFA</span>
-                    </label>
-                </div>
-                <div class="export-filter-buttons">
-                    <button id="selectAllBtn" class="btn btn-small">Select All</button>
-                    <button id="deselectAllBtn" class="btn btn-small">Deselect All</button>
-                </div>
-            </div>
-            
-            <div id="matchesList" class="matches-list">
-                <!-- Matches will be displayed here -->
             </div>
         </section>
     </div>
@@ -179,97 +122,70 @@
     <!-- Edit Match Modal -->
     <div id="editModal" class="modal">
         <div class="modal-content">
-            <span class="close">&times;</span>
+            <span class="close" onclick="this.parentElement.parentElement.style.display='none'">&times;</span>
             <h2>Edit Match</h2>
             <form id="editMatchForm">
                 <input type="hidden" id="editMatchId">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="editMatchDate">Date</label>
-                        <input type="date" id="editMatchDate" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="editMatchTime">Time</label>
-                        <input type="time" id="editMatchTime" required>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="editGameType">Game Type</label>
-                        <select id="editGameType" required>
-                            <option value="Hurling">Hurling</option>
-                            <option value="Gaelic Football">Gaelic Football</option>
-                            <option value="Camogie">Camogie</option>
-                            <option value="Ladies Gaelic Football">Ladies Gaelic Football (LGFA)</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="editMatchDuration">Half Duration</label>
-                        <select id="editMatchDuration" required>
-                            <option value="25">25 minutes</option>
-                            <option value="30">30 minutes</option>
-                            <option value="35">35 minutes</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="editIntervalDuration">Interval Duration</label>
-                        <select id="editIntervalDuration" required>
-                            <option value="5">5 minutes</option>
-                            <option value="10">10 minutes</option>
-                            <option value="15">15 minutes</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="editMatchStatus">Status</label>
-                        <select id="editMatchStatus" required>
-                            <option value="scheduled">Scheduled</option>
-                            <option value="completed">Completed</option>
-                            <option value="cancelled">Cancelled</option>
-                        </select>
-                    </div>
-                </div>
-
+                
                 <div class="form-group">
-                    <label for="editHomeTeam">Home Team</label>
+                    <label for="editHomeTeam">Home Team:</label>
                     <input type="text" id="editHomeTeam" required>
                 </div>
-
+                
                 <div class="form-group">
-                    <label for="editAwayTeam">Away Team</label>
+                    <label for="editAwayTeam">Away Team:</label>
                     <input type="text" id="editAwayTeam" required>
                 </div>
-
+                
                 <div class="form-group">
-                    <label for="editVenue">Venue</label>
-                    <input type="text" id="editVenue" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="editCompetition">Competition</label>
-                    <input type="text" id="editCompetition">
-                </div>
-
-                <div class="form-group">
-                    <label for="editAgeGroup">Age Group</label>
-                    <select id="editAgeGroup" required>
-                        <option value="U12">U12</option>
-                        <option value="U14">U14</option>
-                        <option value="U16">U16</option>
-                        <option value="U18">U18</option>
-                        <option value="U20">U20</option>
-                        <option value="Senior">Senior</option>
-                        <option value="Junior">Junior</option>
-                        <option value="Intermediate">Intermediate</option>
+                    <label for="editGameType">Game Type:</label>
+                    <select id="editGameType" required>
+                        <option value="Hurling">Hurling</option>
+                        <option value="Gaelic Football">Gaelic Football</option>
+                        <option value="Camogie">Camogie</option>
+                        <option value="LGFA">LGFA</option>
                     </select>
                 </div>
-
+                
                 <div class="form-group">
-                    <label for="editNotes">Notes</label>
-                    <textarea id="editNotes"></textarea>
+                    <label for="editMatchDate">Match Date:</label>
+                    <input type="date" id="editMatchDate" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editMatchTime">Match Time:</label>
+                    <input type="time" id="editMatchTime" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editHalfDuration">Half Duration (minutes):</label>
+                    <select id="editHalfDuration" required>
+                        <option value="25">25 minutes</option>
+                        <option value="30">30 minutes</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editIntervalDuration">Interval Duration (minutes):</label>
+                    <select id="editIntervalDuration" required>
+                        <option value="5">5 minutes</option>
+                        <option value="10">10 minutes</option>
+                        <option value="15">15 minutes</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editStatus">Status:</label>
+                    <select id="editStatus" required>
+                        <option value="scheduled">Scheduled</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editNotes">Notes:</label>
+                    <textarea id="editNotes" rows="3"></textarea>
                 </div>
 
                 <!-- Score Section -->
@@ -304,7 +220,7 @@
                         </div>
                     </div>
                 </div>
-
+                
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">Save Changes</button>
                     <button type="button" class="btn btn-secondary" id="cancelEditBtn">Cancel</button>
@@ -313,14 +229,29 @@
         </div>
     </div>
 
-            <script src="script.js"></script>
-    <script>
-        // Register service worker
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js')
-                .then(registration => console.log('ServiceWorker registered'))
-                .catch(error => console.log('ServiceWorker registration failed'));
-        }
-    </script>
+    <!-- Export Filter Modal -->
+    <div id="exportFilterModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="this.parentElement.parentElement.style.display='none'">&times;</span>
+            <h2>Select Game Types for Export</h2>
+            <div class="export-filter-section">
+                <div class="filter-buttons">
+                    <button type="button" class="btn btn-info" id="selectAllBtn">Select All</button>
+                    <button type="button" class="btn btn-info" id="deselectAllBtn">Deselect All</button>
+                </div>
+                <div class="game-type-filters">
+                    <label><input type="checkbox" value="Hurling" checked> Hurling</label>
+                    <label><input type="checkbox" value="Gaelic Football" checked> Gaelic Football</label>
+                    <label><input type="checkbox" value="Camogie" checked> Camogie</label>
+                    <label><input type="checkbox" value="LGFA" checked> LGFA</label>
+                </div>
+                <div class="export-actions">
+                    <button type="button" class="btn btn-success" id="exportFilteredBtn">Export Selected</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
 </body>
 </html>

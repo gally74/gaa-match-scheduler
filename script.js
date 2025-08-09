@@ -1,15 +1,54 @@
 // GAA Match Scheduler JavaScript
 class GAAMatchScheduler {
     constructor() {
-        this.matches = [];
+        this.matches = JSON.parse(localStorage.getItem('gaaMatches')) || [];
         this.currentFilter = 'all';
         this.init();
     }
 
     init() {
-        this.loadMatches();
         this.setupEventListeners();
+        this.setupNavigation();
         this.renderMatches();
+        this.setDefaultDate();
+    }
+
+    setupNavigation() {
+        // Navigation functionality
+        window.showSection = (sectionId) => {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionId).classList.add('active');
+            
+            // Update navigation button states
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Find and activate the clicked button
+            const clickedBtn = document.querySelector(`[onclick="showSection('${sectionId}')"]`);
+            if (clickedBtn) {
+                clickedBtn.classList.add('active');
+            }
+            
+            // If showing matches section, refresh the display
+            if (sectionId === 'view-matches') {
+                this.renderMatches();
+            }
+        };
+    }
+
+    setDefaultDate() {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('matchDate').value = today;
+    }
+
+    loadMatches() {
+        this.matches = JSON.parse(localStorage.getItem('gaaMatches')) || [];
     }
 
     setupEventListeners() {
@@ -83,117 +122,119 @@ class GAAMatchScheduler {
     handleAddMatch(e) {
         e.preventDefault();
         
-        const formData = new FormData(e.target);
+        const homeTeam = document.getElementById('homeTeam').value.trim();
+        const awayTeam = document.getElementById('awayTeam').value.trim();
+        const gameType = document.getElementById('gameType').value;
+        const matchDate = document.getElementById('matchDate').value;
+        const matchTime = document.getElementById('matchTime').value;
+        const halfDuration = parseInt(document.getElementById('halfDuration').value);
+        const intervalDuration = parseInt(document.getElementById('intervalDuration').value);
+        const notes = document.getElementById('notes').value.trim();
+        
+        if (!homeTeam || !awayTeam || !gameType || !matchDate || !matchTime) {
+            alert('Please fill in all required fields');
+            return;
+        }
+        
         const match = {
-            id: Date.now().toString(),
-            date: formData.get('matchDate') || document.getElementById('matchDate').value,
-            time: formData.get('matchTime') || document.getElementById('matchTime').value,
-            gameType: formData.get('gameType') || document.getElementById('gameType').value,
-            matchDuration: formData.get('matchDuration') || document.getElementById('matchDuration').value,
-            intervalDuration: formData.get('intervalDuration') || document.getElementById('intervalDuration').value,
-            status: formData.get('matchStatus') || document.getElementById('matchStatus').value,
-            homeTeam: formData.get('homeTeam') || document.getElementById('homeTeam').value,
-            awayTeam: formData.get('awayTeam') || document.getElementById('awayTeam').value,
-            venue: formData.get('venue') || document.getElementById('venue').value,
-            competition: formData.get('competition') || document.getElementById('competition').value,
-            ageGroup: formData.get('ageGroup') || document.getElementById('ageGroup').value,
-            notes: formData.get('notes') || document.getElementById('notes').value,
-            // Score fields
+            id: Date.now(),
+            homeTeam,
+            awayTeam,
+            gameType,
+            date: matchDate,
+            time: matchTime,
+            halfDuration,
+            intervalDuration,
+            notes,
+            status: 'scheduled',
             homeTeamGoals: 0,
             homeTeamPoints: 0,
             awayTeamGoals: 0,
             awayTeamPoints: 0,
             createdAt: new Date().toISOString()
         };
-
+        
         this.matches.push(match);
         this.saveMatches();
         this.renderMatches();
-        e.target.reset();
+        
+        // Reset form
+        document.getElementById('addMatchForm').reset();
+        this.setDefaultDate();
         
         // Show success message
-        this.showNotification('Match added successfully!', 'success');
+        alert('Match scheduled successfully!');
+        
+        // Switch to matches view to show the new match
+        showSection('view-matches');
     }
 
     handleEditMatch(e) {
         e.preventDefault();
         
-        const matchId = document.getElementById('editMatchId').value;
-        const matchIndex = this.matches.findIndex(m => m.id === matchId);
+        const matchId = parseInt(document.getElementById('editMatchId').value);
+        const match = this.matches.find(m => m.id === matchId);
         
-        if (matchIndex !== -1) {
-            this.matches[matchIndex] = {
-                ...this.matches[matchIndex],
-                date: document.getElementById('editMatchDate').value,
-                time: document.getElementById('editMatchTime').value,
-                gameType: document.getElementById('editGameType').value,
-                matchDuration: document.getElementById('editMatchDuration').value,
-                intervalDuration: document.getElementById('editIntervalDuration').value,
-                status: document.getElementById('editMatchStatus').value,
-                homeTeam: document.getElementById('editHomeTeam').value,
-                awayTeam: document.getElementById('editAwayTeam').value,
-                venue: document.getElementById('editVenue').value,
-                competition: document.getElementById('editCompetition').value,
-                ageGroup: document.getElementById('editAgeGroup').value,
-                notes: document.getElementById('editNotes').value,
-                // Update score fields
-                homeTeamGoals: parseInt(document.getElementById('editHomeTeamGoals').value) || 0,
-                homeTeamPoints: parseInt(document.getElementById('editHomeTeamPoints').value) || 0,
-                awayTeamGoals: parseInt(document.getElementById('editAwayTeamGoals').value) || 0,
-                awayTeamPoints: parseInt(document.getElementById('editAwayTeamPoints').value) || 0,
-                updatedAt: new Date().toISOString()
-            };
-
-            // Auto-change status to "played" if scores are added
-            const hasScores = (parseInt(document.getElementById('editHomeTeamGoals').value) || 0) > 0 || 
-                             (parseInt(document.getElementById('editHomeTeamPoints').value) || 0) > 0 ||
-                             (parseInt(document.getElementById('editAwayTeamGoals').value) || 0) > 0 ||
-                             (parseInt(document.getElementById('editAwayTeamPoints').value) || 0) > 0;
-            
-            if (hasScores && this.matches[matchIndex].status === 'scheduled') {
-                this.matches[matchIndex].status = 'completed';
-                this.showNotification('Match status automatically changed to "completed" due to scores being added!', 'info');
-            }
-
-            this.saveMatches();
-            this.renderMatches();
-            this.closeEditModal();
-            
-            this.showNotification('Match updated successfully!', 'success');
+        if (!match) return;
+        
+        // Update match data
+        match.homeTeam = document.getElementById('editHomeTeam').value.trim();
+        match.awayTeam = document.getElementById('editAwayTeam').value.trim();
+        match.gameType = document.getElementById('editGameType').value;
+        match.date = document.getElementById('editMatchDate').value;
+        match.time = document.getElementById('editMatchTime').value;
+        match.halfDuration = parseInt(document.getElementById('editHalfDuration').value);
+        match.intervalDuration = parseInt(document.getElementById('editIntervalDuration').value);
+        match.status = document.getElementById('editStatus').value;
+        match.notes = document.getElementById('editNotes').value.trim();
+        
+        // Update scores
+        match.homeTeamGoals = parseInt(document.getElementById('editHomeTeamGoals').value) || 0;
+        match.homeTeamPoints = parseInt(document.getElementById('editHomeTeamPoints').value) || 0;
+        match.awayTeamGoals = parseInt(document.getElementById('editAwayTeamGoals').value) || 0;
+        match.awayTeamPoints = parseInt(document.getElementById('editAwayTeamPoints').value) || 0;
+        
+        // Auto-update status to completed if scores are added
+        if ((match.homeTeamGoals > 0 || match.homeTeamPoints > 0 || match.awayTeamGoals > 0 || match.awayTeamPoints > 0) && match.status === 'scheduled') {
+            match.status = 'completed';
+            document.getElementById('editStatus').value = 'completed';
         }
+        
+        this.saveMatches();
+        this.renderMatches();
+        this.closeEditModal();
+        
+        alert('Match updated successfully!');
     }
 
     editMatch(matchId) {
         const match = this.matches.find(m => m.id === matchId);
         if (!match) return;
-
-        // Populate edit form
+        
+        // Populate form fields
         document.getElementById('editMatchId').value = match.id;
-        document.getElementById('editMatchDate').value = match.date;
-        document.getElementById('editMatchTime').value = match.time;
-        document.getElementById('editGameType').value = match.gameType;
-        document.getElementById('editMatchDuration').value = match.matchDuration;
-        document.getElementById('editIntervalDuration').value = match.intervalDuration;
-        document.getElementById('editMatchStatus').value = match.status;
         document.getElementById('editHomeTeam').value = match.homeTeam;
         document.getElementById('editAwayTeam').value = match.awayTeam;
-        document.getElementById('editVenue').value = match.venue;
-        document.getElementById('editCompetition').value = match.competition || '';
-        document.getElementById('editAgeGroup').value = match.ageGroup;
+        document.getElementById('editGameType').value = match.gameType;
+        document.getElementById('editMatchDate').value = match.date;
+        document.getElementById('editMatchTime').value = match.time;
+        document.getElementById('editHalfDuration').value = match.halfDuration;
+        document.getElementById('editIntervalDuration').value = match.intervalDuration;
+        document.getElementById('editStatus').value = match.status;
         document.getElementById('editNotes').value = match.notes || '';
-
+        
         // Populate score fields
         document.getElementById('editHomeTeamGoals').value = match.homeTeamGoals || 0;
         document.getElementById('editHomeTeamPoints').value = match.homeTeamPoints || 0;
         document.getElementById('editAwayTeamGoals').value = match.awayTeamGoals || 0;
         document.getElementById('editAwayTeamPoints').value = match.awayTeamPoints || 0;
-
+        
         // Calculate and display totals
         this.calculateTotalScores();
-
-        // Update score input labels with team names
+        
+        // Update score labels with team names
         this.updateScoreLabels(match.homeTeam, match.awayTeam);
-
+        
         // Show modal
         document.getElementById('editModal').style.display = 'block';
     }
@@ -228,38 +269,37 @@ class GAAMatchScheduler {
 
     addToGoogleCalendar(match) {
         const startDateTime = new Date(`${match.date}T${match.time}`);
-        const halfDuration = parseInt(match.matchDuration);
+        const halfDuration = parseInt(match.halfDuration);
         const intervalDuration = parseInt(match.intervalDuration);
         
-        // Calculate end time (2 halves + interval)
+        // Calculate end time
         const totalDuration = (halfDuration * 2) + intervalDuration;
         const endDateTime = new Date(startDateTime.getTime() + (totalDuration * 60 * 1000));
         
         // Format dates for Google Calendar
         const formatDate = (date) => {
-            return date.toISOString().replace(/-|:|\.\d+/g, '');
+            return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
         };
-
-        const eventTitle = `${match.homeTeam} vs ${match.awayTeam} - ${match.gameType}`;
-        let eventDetails = `${match.competition ? match.competition + ' - ' : ''}${match.ageGroup}
-Venue: ${match.venue}
-Half Duration: ${match.matchDuration} minutes
+        
+        const startDate = formatDate(startDateTime);
+        const endDate = formatDate(endDateTime);
+        
+        let eventDetails = `${match.gameType}
+Half Duration: ${match.halfDuration} minutes
 Interval: ${match.intervalDuration} minutes
 ${match.notes ? 'Notes: ' + match.notes : ''}`;
-
+        
         // Add scores if they exist
-        const { homeTotal, awayTotal } = this.calculateMatchScore(match);
-        if (homeTotal > 0 || awayTotal > 0) {
-            eventDetails += `
-
-Final Score:
+        if (match.homeTeamGoals > 0 || match.homeTeamPoints > 0 || match.awayTeamGoals > 0 || match.awayTeamPoints > 0) {
+            const { homeTotal, awayTotal } = this.calculateMatchScore(match);
+            eventDetails += `\n\nFinal Score:
 ${match.homeTeam}: ${homeTotal} points (${match.homeTeamGoals || 0} goals, ${match.homeTeamPoints || 0} points)
 ${match.awayTeam}: ${awayTotal} points (${match.awayTeamGoals || 0} goals, ${match.awayTeamPoints || 0} points)`;
         }
-
-        const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventTitle)}&dates=${formatDate(startDateTime)}/${formatDate(endDateTime)}&details=${encodeURIComponent(eventDetails)}&location=${encodeURIComponent(match.venue)}`;
-
-        window.open(googleCalendarUrl, '_blank');
+        
+        const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`${match.homeTeam} vs ${match.awayTeam}`)}&dates=${startDate}/${endDate}&details=${encodeURIComponent(eventDetails)}&location=&sf=true&output=xml`;
+        
+        window.open(calendarUrl, '_blank');
     }
 
     renderMatches() {
@@ -288,7 +328,7 @@ ${match.awayTeam}: ${awayTotal} points (${match.awayTeamGoals || 0} goals, ${mat
 
     createMatchCard(match) {
         const startDateTime = new Date(`${match.date}T${match.time}`);
-        const halfDuration = parseInt(match.matchDuration);
+        const halfDuration = parseInt(match.halfDuration);
         const intervalDuration = parseInt(match.intervalDuration);
         const totalDuration = (halfDuration * 2) + intervalDuration;
         
@@ -334,23 +374,9 @@ ${match.awayTeam}: ${awayTotal} points (${match.awayTeamGoals || 0} goals, ${mat
                         <span class="match-detail-value">${match.gameType}</span>
                     </div>
                     <div class="match-detail">
-                        <span class="match-detail-label">Age Group</span>
-                        <span class="match-detail-value">${match.ageGroup}</span>
-                    </div>
-                    <div class="match-detail">
-                        <span class="match-detail-label">Venue</span>
-                        <span class="match-detail-value">${match.venue}</span>
-                    </div>
-                    <div class="match-detail">
                         <span class="match-detail-label">Duration</span>
-                        <span class="match-detail-value">2 × ${match.matchDuration}min + ${match.intervalDuration}min interval</span>
+                        <span class="match-detail-value">2 × ${match.halfDuration}min + ${match.intervalDuration}min interval</span>
                     </div>
-                    ${match.competition ? `
-                    <div class="match-detail">
-                        <span class="match-detail-label">Competition</span>
-                        <span class="match-detail-value">${match.competition}</span>
-                    </div>
-                    ` : ''}
                 </div>
                 
                 ${match.notes ? `
@@ -366,18 +392,18 @@ ${match.awayTeam}: ${awayTotal} points (${match.awayTeamGoals || 0} goals, ${mat
                     <button class="btn btn-primary" onclick="scheduler.addToGoogleCalendar(${JSON.stringify(match).replace(/"/g, '&quot;')})">
                         📅 Add to Calendar
                     </button>
-                    <button class="btn btn-secondary" onclick="scheduler.editMatch('${match.id}')">
+                    <button class="btn btn-secondary" onclick="scheduler.editMatch(${match.id})">
                         ✏️ Edit
                     </button>
                     ${match.status === 'scheduled' ? `
-                    <button class="btn btn-info" onclick="scheduler.editMatch('${match.id}')">
+                    <button class="btn btn-info" onclick="scheduler.editMatch(${match.id})">
                         📊 Add Scores
                     </button>
                     ` : ''}
-                    <button class="btn btn-success" onclick="scheduler.toggleMatchStatus('${match.id}')">
+                    <button class="btn btn-success" onclick="scheduler.toggleMatchStatus(${match.id})">
                         ${match.status === 'completed' ? '🔄 Mark as Scheduled' : '✅ Mark as Completed'}
                     </button>
-                    <button class="btn btn-danger" onclick="scheduler.deleteMatch('${match.id}')">
+                    <button class="btn btn-danger" onclick="scheduler.deleteMatch(${match.id})">
                         🗑️ Delete
                     </button>
                 </div>
@@ -387,11 +413,6 @@ ${match.awayTeam}: ${awayTotal} points (${match.awayTeamGoals || 0} goals, ${mat
 
     saveMatches() {
         localStorage.setItem('gaaMatches', JSON.stringify(this.matches));
-    }
-
-    loadMatches() {
-        const saved = localStorage.getItem('gaaMatches');
-        this.matches = saved ? JSON.parse(saved) : [];
     }
 
     setupScoreEventListeners() {
@@ -595,13 +616,13 @@ ${match.awayTeam}: ${awayTotal} points (${match.awayTeamGoals || 0} goals, ${mat
 
         yearMatches.forEach((match, index) => {
             const matchDate = new Date(match.date).toLocaleDateString('en-IE');
-            const totalDuration = (parseInt(match.matchDuration) * 2) + parseInt(match.intervalDuration);
+            const totalDuration = (parseInt(match.halfDuration) * 2) + parseInt(match.intervalDuration);
             
             reportContent += `Match ${index + 1}: ${matchDate} at ${match.time}\n`;
             reportContent += `   ${match.homeTeam} vs ${match.awayTeam}\n`;
             reportContent += `   ${match.gameType} - ${match.ageGroup}\n`;
             reportContent += `   Venue: ${match.venue}\n`;
-            reportContent += `   Duration: 2 × ${match.matchDuration}min + ${match.intervalDuration}min interval (Total: ${totalDuration}min)\n`;
+            reportContent += `   Duration: 2 × ${match.halfDuration}min + ${match.intervalDuration}min interval (Total: ${totalDuration}min)\n`;
             if (match.competition) {
                 reportContent += `   Competition: ${match.competition}\n`;
             }
