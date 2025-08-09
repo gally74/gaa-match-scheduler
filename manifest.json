@@ -1,0 +1,23 @@
+{
+  "name": "GAA Match Scheduler",
+  "short_name": "GAA Scheduler",
+  "description": "Manage your GAA match schedule, track completed games, and sync with Google Calendar",
+  "start_url": "/gaa-match-scheduler/",
+  "display": "standalone",
+  "background_color": "#2E8B57",
+  "theme_color": "#2E8B57",
+  "orientation": "portrait-primary",
+  "categories": ["sports", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

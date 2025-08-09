@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GAA Match Scheduler</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2E8B57">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="GAA Scheduler">
+    <link rel="apple-touch-icon" href="icon-192x192.png">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏐 GAA Match Scheduler</h1>
+            <p>Manage your scheduled and completed matches</p>
+        </header>
+
+        <!-- Add Match Form -->
+        <section class="add-match-section">
+            <h2>Add New Match</h2>
+            <form id="addMatchForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="matchDate">Date</label>
+                        <input type="date" id="matchDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="matchTime">Time</label>
+                        <input type="time" id="matchTime" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="gameType">Game Type</label>
+                        <select id="gameType" required>
+                            <option value="">Select Game Type</option>
+                            <option value="Hurling">Hurling</option>
+                            <option value="Gaelic Football">Gaelic Football</option>
+                            <option value="Camogie">Camogie</option>
+                            <option value="Ladies Gaelic Football">Ladies Gaelic Football (LGFA)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="matchDuration">Half Duration</label>
+                        <select id="matchDuration" required>
+                            <option value="">Select Duration</option>
+                            <option value="25">25 minutes</option>
+                            <option value="30">30 minutes</option>
+                            <option value="35">35 minutes</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="intervalDuration">Interval Duration</label>
+                        <select id="intervalDuration" required>
+                            <option value="">Select Interval</option>
+                            <option value="5">5 minutes</option>
+                            <option value="10">10 minutes</option>
+                            <option value="15">15 minutes</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="matchStatus">Status</label>
+                        <select id="matchStatus" required>
+                            <option value="scheduled">Scheduled</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="homeTeam">Home Team</label>
+                    <input type="text" id="homeTeam" placeholder="e.g., St. Mary's GAA" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="awayTeam">Away Team</label>
+                    <input type="text" id="awayTeam" placeholder="e.g., St. Patrick's GAA" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="venue">Venue</label>
+                    <input type="text" id="venue" placeholder="e.g., Páirc Uí Chaoimh" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="competition">Competition</label>
+                    <input type="text" id="competition" placeholder="e.g., Senior Championship, League, etc.">
+                </div>
+
+                <div class="form-group">
+                    <label for="ageGroup">Age Group</label>
+                    <select id="ageGroup" required>
+                        <option value="">Select Age Group</option>
+                        <option value="U12">U12</option>
+                        <option value="U14">U14</option>
+                        <option value="U16">U16</option>
+                        <option value="U18">U18</option>
+                        <option value="U20">U20</option>
+                        <option value="Senior">Senior</option>
+                        <option value="Junior">Junior</option>
+                        <option value="Intermediate">Intermediate</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="notes">Notes</label>
+                    <textarea id="notes" placeholder="Any additional notes, special instructions, or details from WhatsApp/Sportslomo messages"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Add Match</button>
+            </form>
+        </section>
+
+        <!-- Match List -->
+        <section class="matches-section">
+            <div class="section-header">
+                <h2>Your Matches</h2>
+                <div class="filter-controls">
+                    <select id="statusFilter">
+                        <option value="all">All Matches</option>
+                        <option value="scheduled">Scheduled</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                    <button id="clearAllBtn" class="btn btn-danger">Clear All</button>
+                </div>
+            </div>
+            
+            <div id="matchesList" class="matches-list">
+                <!-- Matches will be displayed here -->
+            </div>
+        </section>
+    </div>
+
+    <!-- Edit Match Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Edit Match</h2>
+            <form id="editMatchForm">
+                <input type="hidden" id="editMatchId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editMatchDate">Date</label>
+                        <input type="date" id="editMatchDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editMatchTime">Time</label>
+                        <input type="time" id="editMatchTime" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editGameType">Game Type</label>
+                        <select id="editGameType" required>
+                            <option value="Hurling">Hurling</option>
+                            <option value="Gaelic Football">Gaelic Football</option>
+                            <option value="Camogie">Camogie</option>
+                            <option value="Ladies Gaelic Football">Ladies Gaelic Football (LGFA)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editMatchDuration">Half Duration</label>
+                        <select id="editMatchDuration" required>
+                            <option value="25">25 minutes</option>
+                            <option value="30">30 minutes</option>
+                            <option value="35">35 minutes</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editIntervalDuration">Interval Duration</label>
+                        <select id="editIntervalDuration" required>
+                            <option value="5">5 minutes</option>
+                            <option value="10">10 minutes</option>
+                            <option value="15">15 minutes</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editMatchStatus">Status</label>
+                        <select id="editMatchStatus" required>
+                            <option value="scheduled">Scheduled</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="editHomeTeam">Home Team</label>
+                    <input type="text" id="editHomeTeam" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="editAwayTeam">Away Team</label>
+                    <input type="text" id="editAwayTeam" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="editVenue">Venue</label>
+                    <input type="text" id="editVenue" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="editCompetition">Competition</label>
+                    <input type="text" id="editCompetition">
+                </div>
+
+                <div class="form-group">
+                    <label for="editAgeGroup">Age Group</label>
+                    <select id="editAgeGroup" required>
+                        <option value="U12">U12</option>
+                        <option value="U14">U14</option>
+                        <option value="U16">U16</option>
+                        <option value="U18">U18</option>
+                        <option value="U20">U20</option>
+                        <option value="Senior">Senior</option>
+                        <option value="Junior">Junior</option>
+                        <option value="Intermediate">Intermediate</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="editNotes">Notes</label>
+                    <textarea id="editNotes"></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+            <script src="script.js"></script>
+    <script>
+        // Register service worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(registration => console.log('ServiceWorker registered'))
+                .catch(error => console.log('ServiceWorker registration failed'));
+        }
+    </script>
+</body>
+</html>
