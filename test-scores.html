@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Score Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; }
+        .score-inputs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+        .team-score { text-align: center; }
+        .total-scores { background: #f0f0f0; padding: 15px; margin-top: 15px; text-align: center; }
+    </style>
+</head>
+<body>
+    <h1>Score Calculation Test</h1>
+    
+    <div class="test-section">
+        <h2>Test Score Inputs</h2>
+        <div class="score-inputs">
+            <div class="team-score">
+                <label for="homeGoals">Home Team Goals</label>
+                <input type="number" id="homeGoals" min="0" max="50" placeholder="0" oninput="calculateTotals()">
+            </div>
+            <div class="team-score">
+                <label for="homePoints">Home Team Points</label>
+                <input type="number" id="homePoints" min="0" max="50" placeholder="0" oninput="calculateTotals()">
+            </div>
+            <div class="team-score">
+                <label for="awayGoals">Away Team Goals</label>
+                <input type="number" id="awayGoals" min="0" max="50" placeholder="0" oninput="calculateTotals()">
+            </div>
+            <div class="team-score">
+                <label for="awayPoints">Away Team Points</label>
+                <input type="number" id="awayPoints" min="0" max="50" placeholder="0" oninput="calculateTotals()">
+            </div>
+        </div>
+        
+        <div class="total-scores">
+            <div>Home Team Total: <span id="homeTotal">0</span></div>
+            <div>Away Team Total: <span id="awayTotal">0</span></div>
+        </div>
+    </div>
+
+    <script>
+        function calculateTotals() {
+            const homeGoals = parseInt(document.getElementById('homeGoals').value) || 0;
+            const homePoints = parseInt(document.getElementById('homePoints').value) || 0;
+            const awayGoals = parseInt(document.getElementById('awayGoals').value) || 0;
+            const awayPoints = parseInt(document.getElementById('awayPoints').value) || 0;
+
+            // Calculate totals (1 goal = 3 points)
+            const homeTotal = (homeGoals * 3) + homePoints;
+            const awayTotal = (awayGoals * 3) + awayPoints;
+
+            document.getElementById('homeTotal').textContent = homeTotal;
+            document.getElementById('awayTotal').textContent = awayTotal;
+        }
+    </script>
+</body>
+</html>

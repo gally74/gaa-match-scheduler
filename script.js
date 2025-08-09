@@ -34,6 +34,22 @@ class GAAMatchScheduler {
             clearAllBtn.addEventListener('click', () => this.clearAllMatches());
         }
 
+        // Export year report button
+        const exportYearBtn = document.getElementById('exportYearBtn');
+        if (exportYearBtn) {
+            exportYearBtn.addEventListener('click', () => this.exportYearReport());
+        }
+
+        // Select All / Deselect All buttons
+        const selectAllBtn = document.getElementById('selectAllBtn');
+        const deselectAllBtn = document.getElementById('deselectAllBtn');
+        if (selectAllBtn) {
+            selectAllBtn.addEventListener('click', () => this.selectAllGameTypes());
+        }
+        if (deselectAllBtn) {
+            deselectAllBtn.addEventListener('click', () => this.deselectAllGameTypes());
+        }
+
         // Modal close button
         const closeBtn = document.querySelector('.close');
         if (closeBtn) {
@@ -53,6 +69,9 @@ class GAAMatchScheduler {
         if (editMatchForm) {
             editMatchForm.addEventListener('submit', (e) => this.handleEditMatch(e));
         }
+
+        // Score input event listeners for real-time calculation
+        this.setupScoreEventListeners();
     }
 
     handleAddMatch(e) {
@@ -73,6 +92,11 @@ class GAAMatchScheduler {
             competition: formData.get('competition') || document.getElementById('competition').value,
             ageGroup: formData.get('ageGroup') || document.getElementById('ageGroup').value,
             notes: formData.get('notes') || document.getElementById('notes').value,
+            // Score fields
+            homeTeamGoals: 0,
+            homeTeamPoints: 0,
+            awayTeamGoals: 0,
+            awayTeamPoints: 0,
             createdAt: new Date().toISOString()
         };
 
@@ -106,8 +130,24 @@ class GAAMatchScheduler {
                 competition: document.getElementById('editCompetition').value,
                 ageGroup: document.getElementById('editAgeGroup').value,
                 notes: document.getElementById('editNotes').value,
+                // Update score fields
+                homeTeamGoals: parseInt(document.getElementById('editHomeTeamGoals').value) || 0,
+                homeTeamPoints: parseInt(document.getElementById('editHomeTeamPoints').value) || 0,
+                awayTeamGoals: parseInt(document.getElementById('editAwayTeamGoals').value) || 0,
+                awayTeamPoints: parseInt(document.getElementById('editAwayTeamPoints').value) || 0,
                 updatedAt: new Date().toISOString()
             };
+
+            // Auto-change status to "played" if scores are added
+            const hasScores = (parseInt(document.getElementById('editHomeTeamGoals').value) || 0) > 0 || 
+                             (parseInt(document.getElementById('editHomeTeamPoints').value) || 0) > 0 ||
+                             (parseInt(document.getElementById('editAwayTeamGoals').value) || 0) > 0 ||
+                             (parseInt(document.getElementById('editAwayTeamPoints').value) || 0) > 0;
+            
+            if (hasScores && this.matches[matchIndex].status === 'scheduled') {
+                this.matches[matchIndex].status = 'completed';
+                this.showNotification('Match status automatically changed to "completed" due to scores being added!', 'info');
+            }
 
             this.saveMatches();
             this.renderMatches();
@@ -135,6 +175,18 @@ class GAAMatchScheduler {
         document.getElementById('editCompetition').value = match.competition || '';
         document.getElementById('editAgeGroup').value = match.ageGroup;
         document.getElementById('editNotes').value = match.notes || '';
+
+        // Populate score fields
+        document.getElementById('editHomeTeamGoals').value = match.homeTeamGoals || 0;
+        document.getElementById('editHomeTeamPoints').value = match.homeTeamPoints || 0;
+        document.getElementById('editAwayTeamGoals').value = match.awayTeamGoals || 0;
+        document.getElementById('editAwayTeamPoints').value = match.awayTeamPoints || 0;
+
+        // Calculate and display totals
+        this.calculateTotalScores();
+
+        // Update score input labels with team names
+        this.updateScoreLabels(match.homeTeam, match.awayTeam);
 
         // Show modal
         document.getElementById('editModal').style.display = 'block';
@@ -183,11 +235,21 @@ class GAAMatchScheduler {
         };
 
         const eventTitle = `${match.homeTeam} vs ${match.awayTeam} - ${match.gameType}`;
-        const eventDetails = `${match.competition ? match.competition + ' - ' : ''}${match.ageGroup}
+        let eventDetails = `${match.competition ? match.competition + ' - ' : ''}${match.ageGroup}
 Venue: ${match.venue}
 Half Duration: ${match.matchDuration} minutes
 Interval: ${match.intervalDuration} minutes
 ${match.notes ? 'Notes: ' + match.notes : ''}`;
+
+        // Add scores if they exist
+        const { homeTotal, awayTotal } = this.calculateMatchScore(match);
+        if (homeTotal > 0 || awayTotal > 0) {
+            eventDetails += `
+
+Final Score:
+${match.homeTeam}: ${homeTotal} points (${match.homeTeamGoals || 0} goals, ${match.homeTeamPoints || 0} points)
+${match.awayTeam}: ${awayTotal} points (${match.awayTeamGoals || 0} goals, ${match.awayTeamPoints || 0} points)`;
+        }
 
         const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventTitle)}&dates=${formatDate(startDateTime)}/${formatDate(endDateTime)}&details=${encodeURIComponent(eventDetails)}&location=${encodeURIComponent(match.venue)}`;
 
@@ -292,6 +354,8 @@ ${match.notes ? 'Notes: ' + match.notes : ''}`;
                 </div>
                 ` : ''}
                 
+                ${this.renderMatchScores(match)}
+                
                 <div class="match-actions">
                     <button class="btn btn-primary" onclick="scheduler.addToGoogleCalendar(${JSON.stringify(match).replace(/"/g, '&quot;')})">
                         📅 Add to Calendar
@@ -299,6 +363,11 @@ ${match.notes ? 'Notes: ' + match.notes : ''}`;
                     <button class="btn btn-secondary" onclick="scheduler.editMatch('${match.id}')">
                         ✏️ Edit
                     </button>
+                    ${match.status === 'scheduled' ? `
+                    <button class="btn btn-info" onclick="scheduler.editMatch('${match.id}')">
+                        📊 Add Scores
+                    </button>
+                    ` : ''}
                     <button class="btn btn-success" onclick="scheduler.toggleMatchStatus('${match.id}')">
                         ${match.status === 'completed' ? '🔄 Mark as Scheduled' : '✅ Mark as Completed'}
                     </button>
@@ -317,6 +386,95 @@ ${match.notes ? 'Notes: ' + match.notes : ''}`;
     loadMatches() {
         const saved = localStorage.getItem('gaaMatches');
         this.matches = saved ? JSON.parse(saved) : [];
+    }
+
+    setupScoreEventListeners() {
+        // Add event listeners for score inputs to calculate totals in real-time
+        const scoreInputs = ['editHomeTeamGoals', 'editHomeTeamPoints', 'editAwayTeamGoals', 'editAwayTeamPoints'];
+        scoreInputs.forEach(inputId => {
+            const input = document.getElementById(inputId);
+            if (input) {
+                input.addEventListener('input', () => this.calculateTotalScores());
+            }
+        });
+    }
+
+    calculateTotalScores() {
+        const homeGoals = parseInt(document.getElementById('editHomeTeamGoals')?.value || 0);
+        const homePoints = parseInt(document.getElementById('editHomeTeamPoints')?.value || 0);
+        const awayGoals = parseInt(document.getElementById('editAwayTeamGoals')?.value || 0);
+        const awayPoints = parseInt(document.getElementById('editAwayTeamPoints')?.value || 0);
+
+        // Calculate totals (1 goal = 3 points)
+        const homeTotal = (homeGoals * 3) + homePoints;
+        const awayTotal = (awayGoals * 3) + awayPoints;
+
+        // Update total displays
+        const homeTotalElement = document.getElementById('editHomeTeamTotal');
+        const awayTotalElement = document.getElementById('editAwayTeamTotal');
+        
+        if (homeTotalElement) homeTotalElement.textContent = homeTotal;
+        if (awayTotalElement) awayTotalElement.textContent = awayTotal;
+    }
+
+    calculateMatchScore(match) {
+        const homeTotal = (parseInt(match.homeTeamGoals || 0) * 3) + parseInt(match.homeTeamPoints || 0);
+        const awayTotal = (parseInt(match.awayTeamGoals || 0) * 3) + parseInt(match.awayTeamPoints || 0);
+        return { homeTotal, awayTotal };
+    }
+
+    updateScoreLabels(homeTeam, awayTeam) {
+        // Update the score input labels to show actual team names
+        const homeGoalsLabel = document.querySelector('label[for="editHomeTeamGoals"]');
+        const homePointsLabel = document.querySelector('label[for="editHomeTeamPoints"]');
+        const awayGoalsLabel = document.querySelector('label[for="editAwayTeamGoals"]');
+        const awayPointsLabel = document.querySelector('label[for="editAwayTeamPoints"]');
+        
+        if (homeGoalsLabel) homeGoalsLabel.textContent = `${homeTeam} Goals`;
+        if (homePointsLabel) homePointsLabel.textContent = `${homeTeam} Points`;
+        if (awayGoalsLabel) awayGoalsLabel.textContent = `${awayTeam} Goals`;
+        if (awayPointsLabel) awayPointsLabel.textContent = `${awayTeam} Points`;
+
+        // Update total score labels
+        const homeTotalLabel = document.querySelector('#editHomeTeamTotal').previousElementSibling;
+        const awayTotalLabel = document.querySelector('#editAwayTeamTotal').previousElementSibling;
+        
+        if (homeTotalLabel) homeTotalLabel.textContent = `${homeTeam} Total:`;
+        if (awayTotalLabel) awayTotalLabel.textContent = `${awayTeam} Total:`;
+    }
+
+    renderMatchScores(match) {
+        const { homeTotal, awayTotal } = this.calculateMatchScore(match);
+        
+        // Only show scores if they exist
+        if (homeTotal === 0 && awayTotal === 0) {
+            return '';
+        }
+
+        return `
+            <div class="match-scores">
+                <div class="score-row">
+                    <div class="team-score-display">
+                        <span class="team-name">${match.homeTeam}</span>
+                        <div class="goals-points">
+                            <span class="goal-count">${match.homeTeamGoals || 0} Goals</span>
+                            <span class="point-count">${match.homeTeamPoints || 0} Points</span>
+                        </div>
+                    </div>
+                    <span class="total-score-display">${homeTotal}</span>
+                </div>
+                <div class="score-row">
+                    <div class="team-score-display">
+                        <span class="team-name">${match.awayTeam}</span>
+                        <div class="goals-points">
+                            <span class="goal-count">${match.awayTeamGoals || 0} Goals</span>
+                            <span class="point-count">${match.awayTeamPoints || 0} Points</span>
+                        </div>
+                    </div>
+                    <span class="total-score-display">${awayTotal}</span>
+                </div>
+            </div>
+        `;
     }
 
     clearAllMatches() {
@@ -356,6 +514,128 @@ ${match.notes ? 'Notes: ' + match.notes : ''}`;
                 notification.parentNode.removeChild(notification);
             }
         }, 3000);
+    }
+
+    selectAllGameTypes() {
+        const checkboxes = document.querySelectorAll('.game-type-checkboxes input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = true;
+        });
+        this.showNotification('All game types selected', 'info');
+    }
+
+    deselectAllGameTypes() {
+        const checkboxes = document.querySelectorAll('.game-type-checkboxes input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        this.showNotification('All game types deselected', 'info');
+    }
+
+    getSelectedGameTypes() {
+        const checkboxes = document.querySelectorAll('.game-type-checkboxes input[type="checkbox"]:checked');
+        return Array.from(checkboxes).map(checkbox => checkbox.value);
+    }
+
+    exportYearReport() {
+        const currentYear = new Date().getFullYear();
+        const selectedGameTypes = this.getSelectedGameTypes();
+        
+        if (selectedGameTypes.length === 0) {
+            this.showNotification('Please select at least one game type to export', 'warning');
+            return;
+        }
+
+        let yearMatches = this.matches.filter(match => {
+            const matchYear = new Date(match.date).getFullYear();
+            return matchYear === currentYear;
+        });
+
+        // Filter by selected game types
+        yearMatches = yearMatches.filter(match => 
+            selectedGameTypes.includes(match.gameType)
+        );
+
+        if (yearMatches.length === 0) {
+            this.showNotification(`No ${selectedGameTypes.join(', ')} matches found for ${currentYear}`, 'info');
+            return;
+        }
+
+        // Sort matches by date
+        yearMatches.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        // Create report content
+        let reportContent = `GAA Referee Report - ${currentYear}\n`;
+        reportContent += `Generated on: ${new Date().toLocaleDateString('en-IE')}\n`;
+        reportContent += `Game Types: ${selectedGameTypes.join(', ')}\n`;
+        reportContent += `Total Matches: ${yearMatches.length}\n\n`;
+
+        // Group by game type
+        const gameTypeStats = {};
+        yearMatches.forEach(match => {
+            if (!gameTypeStats[match.gameType]) {
+                gameTypeStats[match.gameType] = 0;
+            }
+            gameTypeStats[match.gameType]++;
+        });
+
+        reportContent += `Game Type Breakdown:\n`;
+        Object.entries(gameTypeStats).forEach(([gameType, count]) => {
+            reportContent += `  ${gameType}: ${count} matches\n`;
+        });
+
+        reportContent += `\nMatch Details:\n`;
+        reportContent += `==========================================\n\n`;
+
+        yearMatches.forEach((match, index) => {
+            const matchDate = new Date(match.date).toLocaleDateString('en-IE');
+            const totalDuration = (parseInt(match.matchDuration) * 2) + parseInt(match.intervalDuration);
+            
+            reportContent += `Match ${index + 1}: ${matchDate} at ${match.time}\n`;
+            reportContent += `   ${match.homeTeam} vs ${match.awayTeam}\n`;
+            reportContent += `   ${match.gameType} - ${match.ageGroup}\n`;
+            reportContent += `   Venue: ${match.venue}\n`;
+            reportContent += `   Duration: 2 × ${match.matchDuration}min + ${match.intervalDuration}min interval (Total: ${totalDuration}min)\n`;
+            if (match.competition) {
+                reportContent += `   Competition: ${match.competition}\n`;
+            }
+            if (match.notes) {
+                reportContent += `   Notes: ${match.notes}\n`;
+            }
+            
+            // Add scores if they exist
+            const { homeTotal, awayTotal } = this.calculateMatchScore(match);
+            if (homeTotal > 0 || awayTotal > 0) {
+                reportContent += `   Final Score:\n`;
+                reportContent += `     ${match.homeTeam}: ${homeTotal} points (${match.homeTeamGoals || 0} goals, ${match.homeTeamPoints || 0} points)\n`;
+                reportContent += `     ${match.awayTeam}: ${awayTotal} points (${match.awayTeamGoals || 0} goals, ${match.awayTeamPoints || 0} points)\n`;
+            }
+            
+            reportContent += `   Status: ${match.status.charAt(0).toUpperCase() + match.status.slice(1)}\n`;
+            reportContent += `\n`;
+        });
+
+        // Add summary totals at the end
+        reportContent += `==========================================\n`;
+        reportContent += `SUMMARY TOTALS:\n`;
+        reportContent += `==========================================\n`;
+        Object.entries(gameTypeStats).forEach(([gameType, count]) => {
+            reportContent += `Total ${gameType}: ${count} matches\n`;
+        });
+        reportContent += `\nGrand Total: ${yearMatches.length} matches\n`;
+
+        // Create and download the file
+        const blob = new Blob([reportContent], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `GAA_Referee_Report_${currentYear}_${selectedGameTypes.join('_')}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        this.showNotification(`Year report exported! ${yearMatches.length} ${selectedGameTypes.join(', ')} matches included.`, 'success');
     }
 }
 
