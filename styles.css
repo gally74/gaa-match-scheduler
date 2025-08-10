@@ -196,14 +196,17 @@ header p {
 }
 
 .match-card {
-    border: 2px solid #e1e5e9;
+    background: #4CAF50;
+    border: 2px solid #45a049;
     border-radius: 12px;
     padding: 20px;
     transition: all 0.3s ease;
     position: relative;
+    color: white;
 }
 
 .match-card:hover {
+    background: #45a049;
     border-color: #4a90e2;
     box-shadow: 0 4px 16px rgba(74, 144, 226, 0.1);
 }
@@ -233,7 +236,7 @@ header p {
 .match-title {
     font-size: 1.3rem;
     font-weight: 700;
-    color: #4a90e2;
+    color: white;
     flex: 1;
 }
 
@@ -274,7 +277,7 @@ header p {
 
 .match-detail-label {
     font-size: 12px;
-    color: #666;
+    color: rgba(255, 255, 255, 0.8);
     text-transform: uppercase;
     font-weight: 600;
     margin-bottom: 4px;
@@ -282,20 +285,21 @@ header p {
 
 .match-detail-value {
     font-size: 14px;
-    color: #333;
+    color: white;
     font-weight: 500;
 }
 
 .match-notes {
-    background: #f8f9fa;
+    background: rgba(255, 255, 255, 0.1);
     padding: 15px;
     border-radius: 8px;
     margin-bottom: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .match-notes-label {
     font-size: 12px;
-    color: #666;
+    color: rgba(255, 255, 255, 0.8);
     text-transform: uppercase;
     font-weight: 600;
     margin-bottom: 8px;
@@ -303,7 +307,7 @@ header p {
 
 .match-notes-text {
     font-size: 14px;
-    color: #333;
+    color: white;
     line-height: 1.5;
 }
 
